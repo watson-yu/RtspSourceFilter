@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "live555", "live555\live555.vcxproj", "{3BE86A9B-FF7A-4649-9FED-0F553B618A77}"
 EndProject
@@ -32,6 +32,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VMR9Presenter", "VMR9Presenter\VMR9Presenter.vcxproj", "{147EDF0B-C010-4858-BE42-914440AE30C2}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tester", "Tester\Tester.vcxproj", "{A3A5EB67-95FC-44F9-908A-29E582F5F308}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VirtualCamFilter", "VirtualCamFilter\VirtualCamFilter.vcxproj", "{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -137,6 +139,18 @@ Global
 		{A3A5EB67-95FC-44F9-908A-29E582F5F308}.Release|Win32.ActiveCfg = Release|Win32
 		{A3A5EB67-95FC-44F9-908A-29E582F5F308}.Release|Win32.Build.0 = Release|Win32
 		{A3A5EB67-95FC-44F9-908A-29E582F5F308}.Release|x64.ActiveCfg = Release|Win32
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Debug|Win32.Build.0 = Debug|Win32
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Debug|x64.ActiveCfg = Debug|x64
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Debug|x64.Build.0 = Debug|x64
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Release|Win32.ActiveCfg = Release|Win32
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Release|Win32.Build.0 = Release|Win32
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Release|x64.ActiveCfg = Release|x64
+		{1A31E289-A7C6-489C-89E8-301F2FF1FC9D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -146,5 +160,8 @@ Global
 		{E8A3F6FA-AE1C-4C8E-A0B6-9C8480324EAA} = {92921DC3-F26C-4225-ACBC-D4CC5523B8EB}
 		{6205CD54-6F42-4F1B-B488-4ACFD7ABEFDD} = {92921DC3-F26C-4225-ACBC-D4CC5523B8EB}
 		{147EDF0B-C010-4858-BE42-914440AE30C2} = {92921DC3-F26C-4225-ACBC-D4CC5523B8EB}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {16E134E8-CB8C-4A43-AE89-99B5C17FD5F8}
 	EndGlobalSection
 EndGlobal

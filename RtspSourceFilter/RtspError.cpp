@@ -3,7 +3,7 @@
 class ErrorCategory : public std::error_category
 {
 public:
-    virtual const char* name() const { return "RTSP"; }
+    virtual const char* name() const noexcept { return "RTSP"; }
 
     virtual std::string message(int ev) const
     {
@@ -40,7 +40,7 @@ public:
         }
     }
 
-    virtual std::error_condition default_error_condition(int ev) const
+    virtual std::error_condition default_error_condition(int ev) const noexcept
     {
         switch (ev)
         {
