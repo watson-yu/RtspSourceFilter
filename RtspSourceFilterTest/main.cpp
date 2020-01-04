@@ -60,7 +60,7 @@ int main()
         pRtspConfig->SetAutoReconnectionPeriod(5000);
 
         IFileSourceFilterPtr fileRtspSource(pRtspSource);
-        hr = fileRtspSource->Load(L"rtsp://184.72.239.149/vod/mp4:BigBuckBunny_115k.mov", nullptr);
+        hr = fileRtspSource->Load(L"rtsp://192.168.1.1/h264?w=320&h=240&fps=30&br=200000", nullptr);
         if (FAILED(hr))
             _com_issue_error(hr);
 
