@@ -62,8 +62,8 @@ HRESULT CVCamStream::FillBuffer(IMediaSample* pms)
 			size_t frameSize = frameBuffer->FrameLen;
 			unsigned char* frameData = frameBuffer->pData;
 			for (int i = 0; i < lDataLen; ++i) {
-				if (i < frameSize) pData[i] = frameData[i];
-				else pData[i] = 0;
+				if (i < frameSize) pData[lDataLen - i] = frameData[i];
+				else pData[lDataLen - i] = 0;
 			}
 			return NOERROR;
 		}

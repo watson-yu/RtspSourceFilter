@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "ProxyMediaSink.h"
 
+#define BUFFER_SIZE 2000000
+
 ProxyMediaSink::ProxyMediaSink(UsageEnvironment& env, MediaSubsession& subsession,
 	MediaPacketQueue& mediaPacketQueue, size_t receiveBufferSize)
 	: MediaSink(env)
@@ -14,6 +16,7 @@ ProxyMediaSink::ProxyMediaSink(UsageEnvironment& env, MediaSubsession& subsessio
 	fSPropParameterSetsStr[0] = subsession.fmtp_spropparametersets();
 	fSPropParameterSetsStr[1] = NULL;
 	fSPropParameterSetsStr[2] = NULL;
+	pData = new unsigned char[BUFFER_SIZE];
 }
 
 ProxyMediaSink::~ProxyMediaSink() { delete[] _receiveBuffer; }
@@ -34,8 +37,8 @@ void ProxyMediaSink::afterGettingFrame(unsigned frameSize, unsigned numTruncated
 		bool isRtcpSynced =
 			_subsession.rtpSource() && _subsession.rtpSource()->hasBeenSynchronizedUsingRTCP();
 
-		unsigned char pData[655360];
-		long bufferSize = 655360;
+		//unsigned char pData[655360];
+		long bufferSize = BUFFER_SIZE;
 
 		BYTE* pBuffer = pData;
 		long writtenSize = 0;
@@ -77,10 +80,10 @@ void ProxyMediaSink::afterGettingFrame(unsigned frameSize, unsigned numTruncated
 
 		if (frame != NULL) {
 			size_t frameSize = frame->frameHead.FrameLen;
-			uint8_t* frameBuffer = new uint8_t[frameSize];
-			memcpy_s(frameBuffer, frameSize, frame->pdata, frameSize);
+			//uint8_t* frameBuffer = frame->pdata;//new uint8_t[frameSize];
+			//memcpy_s(frameBuffer, frameSize, frame->pdata, frameSize);
 			_mediaPacketQueue.push(
-				MediaPacketSample(frameBuffer, frameSize, presentationTime, isRtcpSynced));
+				MediaPacketSample((uint8_t*)frame->pdata, frameSize, presentationTime, isRtcpSynced));
 //					_receiveBuffer, frameSize, presentationTime, isRtcpSynced));
 		}
 	}

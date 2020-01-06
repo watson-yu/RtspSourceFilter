@@ -43,4 +43,5 @@ private:
     MediaPacketQueue& _mediaPacketQueue;
 	bool fHaveWrittenFirstFrame;
     char const* fSPropParameterSetsStr[3];
+    unsigned char* pData;
 };

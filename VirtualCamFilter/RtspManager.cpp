@@ -65,6 +65,7 @@ FrameBuffer* RtspManager::getFrameBuffer() {
 		m_frameBuffer->FrameLen = size;
 		if (m_frameBuffer->pData == NULL) m_frameBuffer->pData = (unsigned char*) malloc(size);
 		memcpy_s(m_frameBuffer->pData, size, buffer, size);
+
 		return m_frameBuffer;
 	}
 	return NULL;
