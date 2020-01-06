@@ -2,6 +2,16 @@
 
 #include <streams.h>
 #include "CVCam.h"
+#include "RtspManager.h"
+//#include "playCommon.hh"
+
+enum class VideoState {
+	NoVideo,
+	Lost,
+	Reloading,
+	Started,
+	Playing,
+};
 
 class CVCamStream : public CSourceStream, public IAMStreamConfig, public IKsPropertySet
 {
@@ -53,4 +63,10 @@ private:
 	HBITMAP m_hLogoBmp;
 	CCritSec m_cSharedState;
 	IReferenceClock* m_pClock;
+	VideoState m_currentVideoState;
+	//Medium* m_medium;
+	RtspManager* m_rtspManager;
+
+	bool ProcessVideo(IMediaSample* pSample);
+	int QueryVideo(const char* url);
 };

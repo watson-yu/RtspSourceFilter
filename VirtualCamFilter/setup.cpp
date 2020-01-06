@@ -4,141 +4,70 @@
 //  We do not use the inbuilt BaseClasses routines as we need to register as
 //  a capture source
 //////////////////////////////////////////////////////////////////////////
-#pragma comment(lib, "kernel32")
-#pragma comment(lib, "user32")
-#pragma comment(lib, "gdi32")
-#pragma comment(lib, "advapi32")
-#pragma comment(lib, "winmm")
-#pragma comment(lib, "ole32")
-#pragma comment(lib, "oleaut32")
-
-#ifdef _DEBUG
-#pragma comment(lib, "strmbasd")
-#else
-#pragma comment(lib, "strmbase")
-#endif
 
 #include <streams.h>
-#include <olectl.h>
 #include <initguid.h>
 #include <dllsetup.h>
 #include "CVCam.h"
 
-#define CreateComObject(clsid, iid, var) CoCreateInstance( clsid, NULL, CLSCTX_INPROC_SERVER, iid, (void **)&var);
+// Note: It is better to register no media types than to register a partial 
+// media type (subtype == GUID_NULL) because that can slow down intelligent connect 
+// for everyone else.
 
-STDAPI AMovieSetupRegisterServer(CLSID   clsServer, LPCWSTR szDescription, LPCWSTR szFileName, LPCWSTR szThreadingModel = L"Both", LPCWSTR szServerType = L"InprocServer32");
-STDAPI AMovieSetupUnregisterServer(CLSID clsServer);
+// For a specialized source filter like this, it is best to leave out the
+// AMOVIESETUP_FILTER altogether, so that the filter is not available for
+// intelligent connect. Instead, use the CLSID to create the filter or just
+// use 'new' in your application.
 
-const AMOVIESETUP_MEDIATYPE AMSMediaTypesVCam =
-{
-	&MEDIATYPE_Video,
-	&MEDIASUBTYPE_NULL
+#define FILTER_NAME L"Virtual Camera Filter"
+
+// Filter setup data
+const AMOVIESETUP_MEDIATYPE sudOpPinTypes = { &MEDIATYPE_Video,  // Major type
+											 &MEDIASUBTYPE_NULL // Minor type
 };
 
-const AMOVIESETUP_PIN AMSPinVCam =
-{
-	L"Output",             // Pin string name
-	FALSE,                 // Is it rendered
-	TRUE,                  // Is it an output
-	FALSE,                 // Can we have none
-	FALSE,                 // Can we have many
-	&CLSID_NULL,           // Connects to filter
-	NULL,                  // Connects to pin
-	1,                     // Number of types
-	&AMSMediaTypesVCam      // Pin Media types
+const AMOVIESETUP_PIN sudOutputPinBitmap = { L"Output", // Obsolete, not used.
+											FALSE,     // Is this pin rendered?
+											TRUE,      // Is it an output pin?
+											FALSE,     // Can the filter create zero instances?
+											FALSE,     // Does the filter create multiple instances?
+											&CLSID_NULL,   // Obsolete.
+											NULL,          // Obsolete.
+											1,             // Number of media types.
+											&sudOpPinTypes // Pointer to media types.
 };
 
-const AMOVIESETUP_FILTER AMSFilterVCam =
-{
-	&CLSID_VirtualCamFilter,  // Filter CLSID
-	L"Virtual Cam Filter",     // String name
-	MERIT_DO_NOT_USE,      // Filter merit
-	1,                     // Number pins
-	&AMSPinVCam             // Pin details
+const AMOVIESETUP_FILTER sudPushSourceBitmap = { &CLSID_VirtualCamFilter, // Filter CLSID
+												FILTER_NAME,             // String name
+												MERIT_DO_NOT_USE,        // Filter merit
+												1,                       // Number pins
+												&sudOutputPinBitmap      // Pin details
 };
 
-CFactoryTemplate g_Templates[] =
-{
-	{
-		L"Virtual Cam Filter",
-		&CLSID_VirtualCamFilter,
-		CVCam::CreateInstance,
-		NULL,
-		&AMSFilterVCam
-	},
-
-};
+// List of class IDs and creator functions for the class factory. This
+// provides the link between the OLE entry point in the DLL and an object
+// being created. The class factory will call the static CreateInstance.
+// We provide a set of filters in this one DLL.
+CFactoryTemplate g_Templates[] = {
+	{sudPushSourceBitmap.strName,      // Name
+	 sudPushSourceBitmap.clsID,        // CLSID
+	 CVCam::CreateInstance, // Method to create an instance of
+									   // MyComponent
+	 NULL,                             // Initialization function
+	 &sudPushSourceBitmap              // Set-up information (for filters)
+	} };
 
 int g_cTemplates = sizeof(g_Templates) / sizeof(g_Templates[0]);
 
-STDAPI RegisterFilters(BOOL bRegister)
-{
-	HRESULT hr = NOERROR;
-	WCHAR achFileName[MAX_PATH];
-	char achTemp[MAX_PATH];
-	ASSERT(g_hInst != 0);
+STDAPI DllRegisterServer() { return AMovieDllRegisterServer2(TRUE); }
+STDAPI DllUnregisterServer() { return AMovieDllRegisterServer2(FALSE); }
 
-	if (0 == GetModuleFileNameA(g_hInst, achTemp, sizeof(achTemp)))
-		return AmHresultFromWin32(GetLastError());
-
-	MultiByteToWideChar(CP_ACP, 0L, achTemp, lstrlenA(achTemp) + 1,
-		achFileName, NUMELMS(achFileName));
-
-	hr = CoInitialize(0);
-	if (bRegister)
-	{
-		hr = AMovieSetupRegisterServer(CLSID_VirtualCamFilter, L"Virtual Cam Filter", achFileName, L"Both", L"InprocServer32");
-	}
-
-	if (SUCCEEDED(hr))
-	{
-		IFilterMapper2* fm = 0;
-		hr = CreateComObject(CLSID_FilterMapper2, IID_IFilterMapper2, fm);
-		if (SUCCEEDED(hr))
-		{
-			if (bRegister)
-			{
-				IMoniker* pMoniker = 0;
-				REGFILTER2 rf2;
-				rf2.dwVersion = 1;
-				rf2.dwMerit = MERIT_DO_NOT_USE;
-				rf2.cPins = 1;
-				rf2.rgPins = &AMSPinVCam;
-				hr = fm->RegisterFilter(CLSID_VirtualCamFilter, L"Virtual Cam Filter", &pMoniker, &CLSID_VideoInputDeviceCategory, NULL, &rf2);
-			}
-			else
-			{
-				hr = fm->UnregisterFilter(&CLSID_VideoInputDeviceCategory, 0, CLSID_VirtualCamFilter);
-			}
-		}
-
-		// release interface
-		//
-		if (fm)
-			fm->Release();
-	}
-
-	if (SUCCEEDED(hr) && !bRegister)
-		hr = AMovieSetupUnregisterServer(CLSID_VirtualCamFilter);
-
-	CoFreeUnusedLibraries();
-	CoUninitialize();
-	return hr;
-}
-
-STDAPI DllRegisterServer()
-{
-	return RegisterFilters(TRUE);
-}
-
-STDAPI DllUnregisterServer()
-{
-	return RegisterFilters(FALSE);
-}
-
+//
+// DllEntryPoint
+//
 extern "C" BOOL WINAPI DllEntryPoint(HINSTANCE, ULONG, LPVOID);
 
-BOOL APIENTRY DllMain(HANDLE hModule, DWORD  dwReason, LPVOID lpReserved)
+BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved)
 {
 	return DllEntryPoint((HINSTANCE)(hModule), dwReason, lpReserved);
 }

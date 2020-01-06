@@ -69,6 +69,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <TargetExt>.ax</TargetExt>
+    <IncludePath>$(SolutionDir)ffmpeg\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -89,12 +90,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)live555/liveMedia/include;$(SolutionDir)live555/BasicUsageEnvironment/include;$(SolutionDir)live555/UsageEnvironment/include;$(SolutionDir)live555/groupsock/include;$(SolutionDir)baseclasses;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)baseclasses;$(SolutionDir)live555/liveMedia/include;$(SolutionDir)live555/groupsock/include;$(SolutionDir)live555/BasicUsageEnvironment/include;$(SolutionDir)live555/UsageEnvironment/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>live555.lib;strmbasd.lib;wmcodecdspuuid.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>strmbasd.lib;wmcodecdspuuid.lib;winmm.lib;$(SolutionDir)ffmpeg/lib/avcodec.lib;$(SolutionDir)ffmpeg/lib/avdevice.lib;$(SolutionDir)ffmpeg/lib/avfilter.lib;$(SolutionDir)ffmpeg/lib/avformat.lib;$(SolutionDir)ffmpeg/lib/avutil.lib;$(SolutionDir)ffmpeg/lib/postproc.lib;$(SolutionDir)ffmpeg/lib/swresample.lib;$(SolutionDir)ffmpeg/lib/swscale.lib;$(SolutionDir)ffmpeg/lib/zlib.lib;$(SolutionDir)ffmpeg/lib/bcrypt.lib;$(SolutionDir)Debug\live555.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>VirtualCamFilter.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <RegisterOutput>true</RegisterOutput>
@@ -164,15 +165,33 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CVCamStream.cpp" />
+    <ClCompile Include="MyTaskScheduler.cpp" />
+    <ClCompile Include="MyUsageEnvironment.cpp" />
+    <ClCompile Include="openRTSP.cpp" />
+    <ClCompile Include="ProxyMediaSink.cpp" />
+    <ClCompile Include="RtspManager.cpp" />
     <ClCompile Include="setup.cpp" />
     <ClCompile Include="CVCam.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="Trace.cpp" />
+    <ClCompile Include="VideoDecoder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="VirtualCamFilter.def" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ConcurrentQueue.h" />
     <ClInclude Include="CVCamStream.h" />
     <ClInclude Include="CVCam.h" />
+    <ClInclude Include="MyTaskScheduler.h" />
+    <ClInclude Include="MyUsageEnvironment.h" />
+    <ClInclude Include="openRTSP.h" />
+    <ClInclude Include="ProxyMediaSink.h" />
+    <ClInclude Include="RtspManager.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Trace.h" />
+    <ClInclude Include="VideoDecoder.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VirtualCamFilter.rc" />

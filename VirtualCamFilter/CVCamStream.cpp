@@ -1,4 +1,7 @@
+#include "stdafx.h"
 #include "CVCamStream.h"
+#include "RtspManager.h"
+#include "Trace.h"
 
 //////////////////////////////////////////////////////////////////////////
 // CVCamStream is the one and only output pin of CVCam which handles 
@@ -9,6 +12,7 @@ CVCamStream::CVCamStream(HRESULT* phr, CVCam* pParent, LPCWSTR pPinName) :
 {
 	// Set the default media type as 320x240x24@15
 	GetMediaType(4, &m_mt);
+	m_currentVideoState = VideoState::NoVideo;
 }
 
 CVCamStream::~CVCamStream()
@@ -36,6 +40,7 @@ HRESULT CVCamStream::QueryInterface(REFIID riid, void** ppv)
 
 HRESULT CVCamStream::FillBuffer(IMediaSample* pms)
 {
+	FrameBuffer* frameBuffer = NULL;
 	REFERENCE_TIME rtNow;
 
 	REFERENCE_TIME avgFrameTime = ((VIDEOINFOHEADER*)m_mt.pbFormat)->AvgTimePerFrame;
@@ -49,8 +54,23 @@ HRESULT CVCamStream::FillBuffer(IMediaSample* pms)
 	long lDataLen;
 	pms->GetPointer(&pData);
 	lDataLen = pms->GetSize();
-	for (int i = 0; i < lDataLen; ++i)
-		pData[i] = rand();
+
+	if (m_rtspManager != NULL) {
+		m_rtspManager->doSingleStep();
+		frameBuffer = m_rtspManager->getFrameBuffer();
+		if (frameBuffer != NULL) {
+			size_t frameSize = frameBuffer->FrameLen;
+			unsigned char* frameData = frameBuffer->pData;
+			for (int i = 0; i < lDataLen; ++i) {
+				if (i < frameSize) pData[i] = frameData[i];
+				else pData[i] = 0;
+			}
+			return NOERROR;
+		}
+	}
+	for (int i = 0; i < lDataLen; ++i) {
+		pData[i] = 0xff;
+	}
 
 	return NOERROR;
 } // FillBuffer
@@ -77,14 +97,17 @@ HRESULT CVCamStream::SetMediaType(const CMediaType* pmt)
 // See Directshow help topic for IAMStreamConfig for details on this method
 HRESULT CVCamStream::GetMediaType(int iPosition, CMediaType* pmt)
 {
+	//TRACE_DEBUG("pos=%d, type=0x%x", iPosition, pmt);
+
 	if (iPosition < 0) return E_INVALIDARG;
 	if (iPosition > 8) return VFW_S_NO_MORE_ITEMS;
 
-	if (iPosition == 0)
-	{
+	if (iPosition == 0) {
 		*pmt = m_mt;
 		return S_OK;
 	}
+
+	QueryVideo("rtsp://192.168.1.1/h264?w=640&h=360&fps=30&br=20000");
 
 	DECLARE_PTR(VIDEOINFOHEADER, pvi, pmt->AllocFormatBuffer(sizeof(VIDEOINFOHEADER)));
 	ZeroMemory(pvi, sizeof(VIDEOINFOHEADER));
@@ -284,4 +307,160 @@ HRESULT CVCamStream::QuerySupported(REFGUID guidPropSet, DWORD dwPropID, DWORD* 
 	// We support getting this property, but not setting it.
 	if (pTypeSupport) *pTypeSupport = KSPROPERTY_SUPPORT_GET;
 	return S_OK;
+}
+
+/**
+Setup our video envirnoment.
+Using the transport URL setup the environment
+this most likely means connecting to a VSM and getting
+a security token for the camera.  Note this can take some time
+to complete, we made to revist.  It could be possible to get
+the token in a background thread as long as we have the width
+and height in the url
+*/
+int CVCamStream::QueryVideo(const char* streamUrl)
+{
+	TRACE_DEBUG("url=%s", streamUrl);
+	int ret = -1;
+
+	if (!(m_currentVideoState == VideoState::NoVideo || m_currentVideoState == VideoState::Lost)) {
+		//TRACE_INFO("Video already configured, exiting");
+		return 0;
+	}
+
+	if (!streamUrl) {
+		//TRACE_INFO("Missing the URL");
+		return ret;
+	}
+
+	try {
+		//TRACE_INFO("Try to open the RTSP video stream");
+		m_rtspManager = new RtspManager();
+		m_rtspManager->start();
+		m_currentVideoState = VideoState::Started;
+
+		/*
+		//TaskScheduler* scheduler = BasicTaskScheduler::createNew();
+		UsageEnvironment* env = NULL;//UsageEnvironment::createNew(*scheduler);
+		int verbosityLevel = 1;
+		const char* progName = "CVCamStream";
+
+		if (m_medium == NULL) {
+			m_medium = createClient(*env, streamUrl, verbosityLevel, progName);
+		}
+
+		if (m_medium != NULL) {
+			//continueAfterClientCreation1();
+		}
+		*/
+	}
+	catch (...) {
+		//TRACE_CRITICAL("QueryVideo Failed");
+		m_currentVideoState = VideoState::NoVideo;
+		throw false;
+	}
+	/*
+	//attempt to get the media info from the stream
+	//we know that in 7.2 this does not work, but we are
+	//hoping that 7.5 will enable width and height
+	MediaInfo videoMediaInfo;
+	try {
+		TRACE_INFO("Get Media Info");
+		ret = m_streamMedia->rtspClinetGetMediaInfo(CODEC_TYPE_VIDEO, videoMediaInfo);
+		if (ret < 0)
+		{
+			TRACE_CRITICAL("Unable to get media info from RTSP stream.  ret=%d (url=%s)", ret, url->get_Url());
+			return VFW_S_NO_MORE_ITEMS;
+		}
+	}
+	catch (...)
+	{
+		TRACE_CRITICAL("QueryVideo Failed from ");
+		m_currentVideoState = VideoState::NoVideo;
+		throw false;
+	}
+
+	TRACE_INFO("Format: %d", videoMediaInfo.i_format);
+	TRACE_INFO("Codec: %s", videoMediaInfo.codecName);
+	if (videoMediaInfo.video.width > 0)
+	{
+		TRACE_INFO("Using video information directly from the stream");
+		m_videoWidth = videoMediaInfo.video.width;
+		m_videoHeight = videoMediaInfo.video.height;
+		m_bitCount = videoMediaInfo.video.bitrate;
+		if (videoMediaInfo.video.fps > 0)
+			m_framerate = (REFERENCE_TIME)(10000000 / videoMediaInfo.video.fps);
+	}
+	else {
+		TRACE_WARN("No video info in stream, using defaults from url");
+		m_videoWidth = url->get_Width();
+		m_videoHeight = url->get_Height();
+		//m_videoWidth = 352;
+		//m_videoHeight = 240;
+		m_bitCount = 1;
+		if (url->get_Framerate() > 0)
+			m_framerate = (REFERENCE_TIME)(10000000 / url->get_Framerate());
+	}
+
+	TRACE_INFO("Width: %d", m_videoWidth);
+	TRACE_INFO("Height: %d", m_videoHeight);
+	TRACE_INFO("FPS: %d", 10000000 / m_framerate);
+	TRACE_INFO("Bitrate: %d", m_bitCount);
+	m_currentVideoState = VideoState::Reloading;
+	*/
+	return ret;
+}
+
+/**
+Send our video buffer the live media provider who will copy
+the next frame from the queue
+*/
+bool CVCamStream::ProcessVideo(IMediaSample* pSample)
+{
+	bool rc = true;
+	long cbData;
+	BYTE* pData;
+
+
+	// Access the sample's data buffer
+	pSample->GetPointer(&pData);
+	cbData = pSample->GetSize();
+	long bufferSize = cbData;
+	/*
+	rc = m_streamMedia->GetFrame(pData, bufferSize);
+
+	if (rc)
+	{
+		m_lostFrameBufferCount = 0;
+		m_currentVideoState = Playing;
+	}
+	else {
+		//paint black video to indicate a lose
+		int count = ((CPushSourceRTSP*)this->m_pFilter)->m_transportUrl->get_LostFrameCount();
+		if (m_lostFrameBufferCount > count)
+		{
+			if (!(m_currentVideoState == VideoState::Lost))
+			{
+				TRACE_INFO("Lost frame count (%d) over limit {%d). Paint Black Frame", m_lostFrameBufferCount, count);
+				//HelpLib::TraceHelper::WriteInfo("Lost frame count over limit. Paint Black Frame and shutdown.");
+				memset(pData, 0, bufferSize);
+				m_currentVideoState = VideoState::Lost;
+				rc = true;
+			}
+			else {
+				TRACE_INFO("Shutting Down");
+				rc = false;
+			}
+
+
+		}
+		else {
+			m_lostFrameBufferCount++;
+			rc = true;
+			//if(m_currentVideoState==VideoState::Lost) Sleep(1000);
+
+		}
+	}
+	*/
+	return rc;
 }
