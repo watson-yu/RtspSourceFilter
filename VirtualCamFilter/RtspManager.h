@@ -17,4 +17,5 @@ public:
 	FrameBuffer* getFrameBuffer();
 
 private:
+	FrameBuffer* m_frameBuffer;
 };

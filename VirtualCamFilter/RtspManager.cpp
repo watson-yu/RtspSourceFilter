@@ -44,6 +44,10 @@ MyTaskScheduler* taskScheduler = NULL;
 MediaPacketSample mediaSample;
 
 RtspManager::RtspManager() {
+	m_frameBuffer = (FrameBuffer*) malloc(sizeof(FrameBuffer));
+	m_frameBuffer->FrameType = 2;
+	m_frameBuffer->TimeStamp = 0;
+	m_frameBuffer->pData = NULL;
 }
 
 RtspManager::~RtspManager() {
@@ -58,13 +62,10 @@ FrameBuffer* RtspManager::getFrameBuffer() {
 		size_t size = mediaSample.size();
 		unsigned char* buffer = mediaSample.data();
 
-		FrameBuffer* frameBuffer = (FrameBuffer*)malloc(sizeof(FrameBuffer));
-		frameBuffer->FrameLen = size;
-		frameBuffer->FrameType = 2;
-		frameBuffer->TimeStamp = 0;
-		frameBuffer->pData = (unsigned char*)malloc(size);
-		memcpy_s(frameBuffer->pData, size, buffer, size);
-		return frameBuffer;
+		m_frameBuffer->FrameLen = size;
+		if (m_frameBuffer->pData == NULL) m_frameBuffer->pData = (unsigned char*) malloc(size);
+		memcpy_s(m_frameBuffer->pData, size, buffer, size);
+		return m_frameBuffer;
 	}
 	return NULL;
 }
