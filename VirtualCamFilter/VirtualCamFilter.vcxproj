@@ -180,9 +180,9 @@
     <None Include="VirtualCamFilter.def" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ConcurrentQueue.h" />
     <ClInclude Include="CVCamStream.h" />
     <ClInclude Include="CVCam.h" />
+    <ClInclude Include="FrameInfo.h" />
     <ClInclude Include="MyTaskScheduler.h" />
     <ClInclude Include="MyUsageEnvironment.h" />
     <ClInclude Include="openRTSP.h" />

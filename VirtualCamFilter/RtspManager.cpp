@@ -38,36 +38,20 @@ unsigned sessionTimeoutParameter = 0;
 unsigned qosMeasurementIntervalMS = 0; // 0 means: Don't output QOS data
 double durationSlop = -1.0; // extra seconds to play at the end
 TaskToken sessionTimerTask = NULL;
-MediaPacketQueue _videoMediaQueue;
 const int recvBufferVideo = 256 * 1024; // 256KB - H.264 IDR frames can be really big
 MyTaskScheduler* taskScheduler = NULL;
-MediaPacketSample mediaSample;
+ProxyMediaSink* proxyMediaSink = NULL;
 
 RtspManager::RtspManager() {
-	m_frameBuffer = (FrameBuffer*) malloc(sizeof(FrameBuffer));
-	m_frameBuffer->FrameType = 2;
-	m_frameBuffer->TimeStamp = 0;
-	m_frameBuffer->pData = NULL;
 	m_streamUrl = NULL;
 }
 
 RtspManager::~RtspManager() {
 }
 
-FrameBuffer* RtspManager::getFrameBuffer() {
-	if (!_videoMediaQueue.empty()) {
-		_videoMediaQueue.pop(mediaSample);
-	}
-
-	if (!mediaSample.invalid()) {
-		size_t size = mediaSample.size();
-		unsigned char* buffer = mediaSample.data();
-
-		m_frameBuffer->FrameLen = size;
-		if (m_frameBuffer->pData == NULL) m_frameBuffer->pData = (unsigned char*) malloc(size);
-		memcpy_s(m_frameBuffer->pData, size, buffer, size);
-
-		return m_frameBuffer;
+FrameInfo* RtspManager::getFrameInfo() {
+	if (proxyMediaSink != NULL) {
+		return proxyMediaSink->getFrameInfo();
 	}
 	return NULL;
 }
@@ -278,8 +262,8 @@ void createOutputs() {
 			if (strcmp(subsession->codecName(), "H264") == 0) {
 				// For H.264 video stream, we use a special sink that adds 'start codes',
 				// and (at the start) the SPS and PPS NAL units:
-				subsession->sink = new ProxyMediaSink(*env, *subsession,
-					_videoMediaQueue, recvBufferVideo);
+				proxyMediaSink = new ProxyMediaSink(*env, *subsession, recvBufferVideo);
+				subsession->sink = proxyMediaSink;
 				subsession->sink->startPlaying(*(subsession->readSource()),
 					subsessionAfterPlaying,
 					subsession);

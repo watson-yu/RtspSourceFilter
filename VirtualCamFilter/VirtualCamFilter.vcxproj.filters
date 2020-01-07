@@ -85,10 +85,10 @@
     <ClInclude Include="ProxyMediaSink.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ConcurrentQueue.h">
+    <ClInclude Include="VideoDecoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VideoDecoder.h">
+    <ClInclude Include="FrameInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

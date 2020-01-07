@@ -1,22 +1,25 @@
 #include "stdafx.h"
 #include "ProxyMediaSink.h"
 
-ProxyMediaSink::ProxyMediaSink(UsageEnvironment& env, MediaSubsession& subsession,
-	MediaPacketQueue& mediaPacketQueue, size_t receiveBufferSize)
+ProxyMediaSink::ProxyMediaSink(UsageEnvironment& env, MediaSubsession& subsession, size_t receiveBufferSize)
 	: MediaSink(env)
 	, _receiveBufferSize(receiveBufferSize)
 	, _receiveBuffer(new uint8_t[receiveBufferSize])
 	, _subsession(subsession)
-	, _mediaPacketQueue(mediaPacketQueue)
 {
 	_decoder = new CVideoDecoder("H264");
 	fHaveWrittenFirstFrame = False;
 	fSPropParameterSetsStr[0] = subsession.fmtp_spropparametersets();
 	fSPropParameterSetsStr[1] = NULL;
 	fSPropParameterSetsStr[2] = NULL;
+	_frameInfo = NULL;
 }
 
 ProxyMediaSink::~ProxyMediaSink() { delete[] _receiveBuffer; }
+
+FrameInfo* ProxyMediaSink::getFrameInfo() {
+	return _frameInfo;
+}
 
 void ProxyMediaSink::afterGettingFrame(void* clientData, unsigned frameSize,
 	unsigned numTruncatedBytes, struct timeval presentationTime,
@@ -73,16 +76,10 @@ void ProxyMediaSink::afterGettingFrame(unsigned frameSize, unsigned numTruncated
 		writtenSize += _receiveBufferSize;
 
 		// send the frame out to the decoder
-		FrameInfo* frame = _decoder->DecodeFrame(pData, writtenSize);
+		FrameInfo *newFrame = _decoder->DecodeFrame(pData, writtenSize);
+		delete _frameInfo;
+		_frameInfo = newFrame;
 
-		if (frame != NULL) {
-			size_t frameSize = frame->frameHead.FrameLen;
-			//uint8_t* frameBuffer = frame->pdata;//new uint8_t[frameSize];
-			//memcpy_s(frameBuffer, frameSize, frame->pdata, frameSize);
-			_mediaPacketQueue.push(
-				MediaPacketSample((uint8_t*)frame->pdata, frameSize, presentationTime, isRtcpSynced));
-//					_receiveBuffer, frameSize, presentationTime, isRtcpSynced));
-		}
 		delete pData;
 	}
 	else {

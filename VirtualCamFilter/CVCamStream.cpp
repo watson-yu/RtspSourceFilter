@@ -44,7 +44,6 @@ HRESULT CVCamStream::QueryInterface(REFIID riid, void** ppv)
 
 HRESULT CVCamStream::FillBuffer(IMediaSample* pms)
 {
-	FrameBuffer* frameBuffer = NULL;
 	REFERENCE_TIME rtNow;
 
 	REFERENCE_TIME avgFrameTime = ((VIDEOINFOHEADER*)m_mt.pbFormat)->AvgTimePerFrame;
@@ -61,10 +60,10 @@ HRESULT CVCamStream::FillBuffer(IMediaSample* pms)
 
 	if (m_rtspManager != NULL) {
 		m_rtspManager->doSingleStep();
-		frameBuffer = m_rtspManager->getFrameBuffer();
-		if (frameBuffer != NULL) {
-			size_t frameSize = frameBuffer->FrameLen;
-			unsigned char* frameData = frameBuffer->pData;
+		FrameInfo* frameInfo = m_rtspManager->getFrameInfo();
+		if (frameInfo != NULL) {
+			size_t frameSize = frameInfo->frameHead.FrameLen;
+			char* frameData = frameInfo->pdata;
 			int idx = 0;
 			for (int row = m_height - 1; row >= 0; row--) {
 				if (idx >= lDataLen) break;

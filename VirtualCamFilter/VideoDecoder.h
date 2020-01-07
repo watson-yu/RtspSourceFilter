@@ -11,6 +11,7 @@
 #include <iostream>
 #include "MediaSink.hh"
 //#include "MediaQueue.h"
+#include "FrameInfo.h"
 
 extern "C"
 {
@@ -21,19 +22,6 @@ extern "C"
 #include <libavcodec/avcodec.h>
 #include "libswscale/swscale.h"
 }
-
-typedef struct __FrameHeader
-{
-	long TimeStamp;
-	long FrameType;
-	long FrameLen;
-} FrameHeader;
-
-typedef struct __FrameInfo
-{
-    FrameHeader frameHead;
-	char* pdata;
-} FrameInfo;
 
 class CVideoDecoder
 {

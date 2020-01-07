@@ -1,12 +1,6 @@
 #pragma once
 
-typedef struct __FrameBuffer
-{
-	long TimeStamp;
-	long FrameType;
-	size_t FrameLen;
-	unsigned char* pData;
-} FrameBuffer;
+#include "FrameInfo.h"
 
 class RtspManager {
 public:
@@ -14,9 +8,8 @@ public:
 	~RtspManager();
 	void start(char* streamUrl);
 	void doSingleStep();
-	FrameBuffer* getFrameBuffer();
+	FrameInfo* getFrameInfo();
 
 private:
-	FrameBuffer* m_frameBuffer;
 	char* m_streamUrl;
 };
