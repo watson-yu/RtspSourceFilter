@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "ProxyMediaSink.h"
 
-#define BUFFER_SIZE 16000000
-
 ProxyMediaSink::ProxyMediaSink(UsageEnvironment& env, MediaSubsession& subsession,
 	MediaPacketQueue& mediaPacketQueue, size_t receiveBufferSize)
 	: MediaSink(env)
@@ -16,7 +14,6 @@ ProxyMediaSink::ProxyMediaSink(UsageEnvironment& env, MediaSubsession& subsessio
 	fSPropParameterSetsStr[0] = subsession.fmtp_spropparametersets();
 	fSPropParameterSetsStr[1] = NULL;
 	fSPropParameterSetsStr[2] = NULL;
-	pData = new unsigned char[BUFFER_SIZE];
 }
 
 ProxyMediaSink::~ProxyMediaSink() { delete[] _receiveBuffer; }
@@ -37,9 +34,9 @@ void ProxyMediaSink::afterGettingFrame(unsigned frameSize, unsigned numTruncated
 		bool isRtcpSynced =
 			_subsession.rtpSource() && _subsession.rtpSource()->hasBeenSynchronizedUsingRTCP();
 
-		//unsigned char pData[655360];
-		long bufferSize = BUFFER_SIZE;
+		long bufferSize = _receiveBufferSize * 2;
 
+		unsigned char* pData = (unsigned char*)malloc(bufferSize);
 		BYTE* pBuffer = pData;
 		long writtenSize = 0;
 
@@ -86,6 +83,7 @@ void ProxyMediaSink::afterGettingFrame(unsigned frameSize, unsigned numTruncated
 				MediaPacketSample((uint8_t*)frame->pdata, frameSize, presentationTime, isRtcpSynced));
 //					_receiveBuffer, frameSize, presentationTime, isRtcpSynced));
 		}
+		delete pData;
 	}
 	else {
 	}

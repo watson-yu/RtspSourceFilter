@@ -122,7 +122,7 @@ HRESULT CVCamStream::GetMediaType(int iPosition, CMediaType* pmt)
 	m_height = SCALE_Y * iPosition;
 
 	char str[256];
-	sprintf(str, "rtsp://192.168.1.1/h264?w=%d&h=%d&fps=30&br=1000000", m_width, m_height);
+	sprintf(str, "rtsp://192.168.1.1/h264?w=%d&h=%d&fps=15&br=1000000", m_width, m_height);
 	QueryVideo(str);
 
 	DECLARE_PTR(VIDEOINFOHEADER, pvi, pmt->AllocFormatBuffer(sizeof(VIDEOINFOHEADER)));
