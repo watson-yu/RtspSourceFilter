@@ -48,6 +48,7 @@ RtspManager::RtspManager() {
 	m_frameBuffer->FrameType = 2;
 	m_frameBuffer->TimeStamp = 0;
 	m_frameBuffer->pData = NULL;
+	m_streamUrl = NULL;
 }
 
 RtspManager::~RtspManager() {
@@ -75,8 +76,8 @@ void RtspManager::doSingleStep() {
 	if (taskScheduler != NULL) taskScheduler->doSingleStep(100);
 }
 
-void RtspManager::start() {
-	const char* streamURL = "rtsp://192.168.1.1/h264?w=640&h=360&fps=30&br=40000";
+void RtspManager::start(char* streamUrl) {
+	m_streamUrl = streamUrl;
 	//const char* streamURL = "rtsp://172.20.10.2/pusher";
 	int verbosityLevel = 1;
 	const char* progName = "VirtualCamFilter";
@@ -84,7 +85,7 @@ void RtspManager::start() {
 	taskScheduler = MyTaskScheduler::createNew();
 	env = MyUsageEnvironment::createNew(*taskScheduler);
 
-	Medium* medium = createClient(*env, streamURL, verbosityLevel, progName);
+	Medium* medium = createClient(*env, m_streamUrl, verbosityLevel, progName);
 	TRACE_DEBUG("medium=0x%x", medium);
 
 	if (medium == NULL) {

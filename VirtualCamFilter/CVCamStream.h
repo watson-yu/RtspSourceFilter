@@ -66,7 +66,9 @@ private:
 	VideoState m_currentVideoState;
 	//Medium* m_medium;
 	RtspManager* m_rtspManager;
+	int m_width;
+	int m_height;
 
 	bool ProcessVideo(IMediaSample* pSample);
-	int QueryVideo(const char* url);
+	int QueryVideo(char* url);
 };

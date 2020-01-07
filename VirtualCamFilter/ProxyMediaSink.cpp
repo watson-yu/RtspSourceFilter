@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ProxyMediaSink.h"
 
-#define BUFFER_SIZE 2000000
+#define BUFFER_SIZE 16000000
 
 ProxyMediaSink::ProxyMediaSink(UsageEnvironment& env, MediaSubsession& subsession,
 	MediaPacketQueue& mediaPacketQueue, size_t receiveBufferSize)

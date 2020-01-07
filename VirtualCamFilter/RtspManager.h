@@ -12,10 +12,11 @@ class RtspManager {
 public:
 	RtspManager();
 	~RtspManager();
-	void start();
+	void start(char* streamUrl);
 	void doSingleStep();
 	FrameBuffer* getFrameBuffer();
 
 private:
 	FrameBuffer* m_frameBuffer;
+	char* m_streamUrl;
 };

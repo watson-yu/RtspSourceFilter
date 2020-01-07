@@ -3,6 +3,9 @@
 #include "RtspManager.h"
 #include "Trace.h"
 
+#define SCALE_X 160
+#define SCALE_Y 90
+
 //////////////////////////////////////////////////////////////////////////
 // CVCamStream is the one and only output pin of CVCam which handles 
 // all the stuff.
@@ -11,7 +14,8 @@ CVCamStream::CVCamStream(HRESULT* phr, CVCam* pParent, LPCWSTR pPinName) :
 	CSourceStream(NAME("Virtual Cam Filter"), phr, pParent, pPinName), m_pParent(pParent)
 {
 	// Set the default media type as 320x240x24@15
-	GetMediaType(4, &m_mt);
+	int position = 4;
+	GetMediaType(position, &m_mt);
 	m_currentVideoState = VideoState::NoVideo;
 }
 
@@ -61,9 +65,16 @@ HRESULT CVCamStream::FillBuffer(IMediaSample* pms)
 		if (frameBuffer != NULL) {
 			size_t frameSize = frameBuffer->FrameLen;
 			unsigned char* frameData = frameBuffer->pData;
-			for (int i = 0; i < lDataLen; ++i) {
-				if (i < frameSize) pData[lDataLen - i] = frameData[i];
-				else pData[lDataLen - i] = 0;
+			int idx = 0;
+			for (int row = m_height - 1; row >= 0; row--) {
+				if (idx >= lDataLen) break;
+				for (int col = 0; col < m_width * 3; col++) {
+					if (idx >= lDataLen) break;
+					int pos = col + row * m_width * 3;
+					if (pos < frameSize) {
+						pData[idx++] = frameData[pos];
+					}
+				}
 			}
 			return NOERROR;
 		}
@@ -107,7 +118,12 @@ HRESULT CVCamStream::GetMediaType(int iPosition, CMediaType* pmt)
 		return S_OK;
 	}
 
-	QueryVideo("rtsp://192.168.1.1/h264?w=640&h=360&fps=30&br=20000");
+	m_width = SCALE_X * iPosition;
+	m_height = SCALE_Y * iPosition;
+
+	char str[256];
+	sprintf(str, "rtsp://192.168.1.1/h264?w=%d&h=%d&fps=30&br=1000000", m_width, m_height);
+	QueryVideo(str);
 
 	DECLARE_PTR(VIDEOINFOHEADER, pvi, pmt->AllocFormatBuffer(sizeof(VIDEOINFOHEADER)));
 	ZeroMemory(pvi, sizeof(VIDEOINFOHEADER));
@@ -115,8 +131,8 @@ HRESULT CVCamStream::GetMediaType(int iPosition, CMediaType* pmt)
 	pvi->bmiHeader.biCompression = BI_RGB;
 	pvi->bmiHeader.biBitCount = 24;
 	pvi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	pvi->bmiHeader.biWidth = 80 * iPosition;
-	pvi->bmiHeader.biHeight = 60 * iPosition;
+	pvi->bmiHeader.biWidth = m_width;
+	pvi->bmiHeader.biHeight = m_height;
 	pvi->bmiHeader.biPlanes = 1;
 	pvi->bmiHeader.biSizeImage = GetBitmapSize(&pvi->bmiHeader);
 	pvi->bmiHeader.biClrImportant = 0;
@@ -216,8 +232,8 @@ HRESULT STDMETHODCALLTYPE CVCamStream::GetStreamCaps(int iIndex, AM_MEDIA_TYPE**
 	pvi->bmiHeader.biCompression = BI_RGB;
 	pvi->bmiHeader.biBitCount = 24;
 	pvi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	pvi->bmiHeader.biWidth = 80 * iIndex;
-	pvi->bmiHeader.biHeight = 60 * iIndex;
+	pvi->bmiHeader.biWidth = SCALE_X * iIndex;
+	pvi->bmiHeader.biHeight = SCALE_Y * iIndex;
 	pvi->bmiHeader.biPlanes = 1;
 	pvi->bmiHeader.biSizeImage = GetBitmapSize(&pvi->bmiHeader);
 	pvi->bmiHeader.biClrImportant = 0;
@@ -237,21 +253,21 @@ HRESULT STDMETHODCALLTYPE CVCamStream::GetStreamCaps(int iIndex, AM_MEDIA_TYPE**
 
 	pvscc->guid = FORMAT_VideoInfo;
 	pvscc->VideoStandard = AnalogVideo_None;
-	pvscc->InputSize.cx = 640;
-	pvscc->InputSize.cy = 480;
-	pvscc->MinCroppingSize.cx = 80;
-	pvscc->MinCroppingSize.cy = 60;
-	pvscc->MaxCroppingSize.cx = 640;
-	pvscc->MaxCroppingSize.cy = 480;
-	pvscc->CropGranularityX = 80;
-	pvscc->CropGranularityY = 60;
+	pvscc->InputSize.cx = m_width;
+	pvscc->InputSize.cy = m_height;
+	pvscc->MinCroppingSize.cx = SCALE_X;
+	pvscc->MinCroppingSize.cy = SCALE_Y;
+	pvscc->MaxCroppingSize.cx = m_width;
+	pvscc->MaxCroppingSize.cy = m_height;
+	pvscc->CropGranularityX = SCALE_X;
+	pvscc->CropGranularityY = SCALE_Y;
 	pvscc->CropAlignX = 0;
 	pvscc->CropAlignY = 0;
 
-	pvscc->MinOutputSize.cx = 80;
-	pvscc->MinOutputSize.cy = 60;
-	pvscc->MaxOutputSize.cx = 640;
-	pvscc->MaxOutputSize.cy = 480;
+	pvscc->MinOutputSize.cx = SCALE_X;
+	pvscc->MinOutputSize.cy = SCALE_Y;
+	pvscc->MaxOutputSize.cx = m_width;
+	pvscc->MaxOutputSize.cy = m_height;
 	pvscc->OutputGranularityX = 0;
 	pvscc->OutputGranularityY = 0;
 	pvscc->StretchTapsX = 0;
@@ -260,8 +276,8 @@ HRESULT STDMETHODCALLTYPE CVCamStream::GetStreamCaps(int iIndex, AM_MEDIA_TYPE**
 	pvscc->ShrinkTapsY = 0;
 	pvscc->MinFrameInterval = 200000;   //50 fps
 	pvscc->MaxFrameInterval = 50000000; // 0.2 fps
-	pvscc->MinBitsPerSecond = (80 * 60 * 3 * 8) / 5;
-	pvscc->MaxBitsPerSecond = 640 * 480 * 3 * 8 * 50;
+	pvscc->MinBitsPerSecond = (SCALE_X * SCALE_Y * 3 * 8) / 5;
+	pvscc->MaxBitsPerSecond = m_width * m_height * 3 * 8 * 50;
 
 	return S_OK;
 }
@@ -318,7 +334,7 @@ to complete, we made to revist.  It could be possible to get
 the token in a background thread as long as we have the width
 and height in the url
 */
-int CVCamStream::QueryVideo(const char* streamUrl)
+int CVCamStream::QueryVideo(char* streamUrl)
 {
 	TRACE_DEBUG("url=%s", streamUrl);
 	int ret = -1;
@@ -336,7 +352,7 @@ int CVCamStream::QueryVideo(const char* streamUrl)
 	try {
 		//TRACE_INFO("Try to open the RTSP video stream");
 		m_rtspManager = new RtspManager();
-		m_rtspManager->start();
+		m_rtspManager->start(streamUrl);
 		m_currentVideoState = VideoState::Started;
 
 		/*
